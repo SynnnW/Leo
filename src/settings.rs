@@ -26,6 +26,7 @@ pub struct Settings {
     pub clipboard: bool,
     /// Tabel yang disalin dari chat AI dirapikan (bergaris, lebar kolom pas) sebelum ditempel.
     pub tidy_tables: bool,
+    pub earbuds: EarbudsCfg,
     pub pomodoro: PomodoroCfg,
     pub water: WaterCfg,
 }
@@ -40,9 +41,30 @@ impl Default for Settings {
             screenshot_to_shelf: true,
             clipboard: false,
             tidy_tables: true,
+            earbuds: Default::default(),
             pomodoro: Default::default(),
             water: Default::default(),
         }
+    }
+}
+
+/// Pop-up saat case earbud TWS dibuka di dekat laptop (dideteksi lewat iklan BLE).
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct EarbudsCfg {
+    /// Mati secara default: memindai iklan Bluetooth terus-menerus.
+    pub enabled: bool,
+    /// Nama yang tampil di pop-up.
+    pub label: String,
+    /// Sebagian nama perangkat di Windows untuk membaca baterai (tanpa membedakan huruf besar/kecil).
+    pub device_match: String,
+    /// Case dianggap terbuka bila sinyal lebih kuat dari ini (dBm). Berlaku setelah Amora dijalankan ulang.
+    pub open_rssi: i32,
+}
+
+impl Default for EarbudsCfg {
+    fn default() -> Self {
+        Self { enabled: false, label: "KZ Vxs".into(), device_match: "vxs".into(), open_rssi: -50 }
     }
 }
 
@@ -121,5 +143,28 @@ impl Settings {
 
     pub fn save(&self) {
         save_json("settings.json", self);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn old_settings_file_without_earbuds_keeps_working() {
+        // settings.json dari versi sebelum pop-up earbud tidak punya kolom "earbuds".
+        let s: Settings = serde_json::from_str(r#"{ "lyrics": true, "minimal": true }"#).unwrap();
+        assert!(s.lyrics && s.minimal);
+        assert!(!s.earbuds.enabled, "pop-up earbud mati secara default");
+        assert_eq!(s.earbuds.device_match, "vxs");
+        assert_eq!(s.earbuds.open_rssi, -50);
+    }
+
+    #[test]
+    fn earbuds_section_can_be_partially_overridden() {
+        let s: Settings = serde_json::from_str(r#"{ "earbuds": { "enabled": true, "label": "Buds" } }"#).unwrap();
+        assert!(s.earbuds.enabled);
+        assert_eq!(s.earbuds.label, "Buds");
+        assert_eq!(s.earbuds.device_match, "vxs", "kolom yang tidak ditulis memakai nilai bawaan");
     }
 }

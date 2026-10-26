@@ -84,6 +84,7 @@ Untuk pengembangan:
 - [x] Maskot: mata muncul saat PC diam 1 menit, tidur setelah 2 menit, menyapa saat kembali
 - [x] Mode notch minimal: garis tipis, tetap muncul penuh untuk lirik dan notifikasi
 - [x] Indikator mic (oranye) / kamera (hijau) + notifikasi nama aplikasinya
+- [x] Pop-up earbud (mati default, nyalakan di Setelan → *Pop-up earbud*): case TWS dibuka di dekat PC → pop-up di notch. Deteksi lewat iklan BLE dengan service `0xFD92` (mis. KZ Vxs); selama earbud tersambung ke PC, baterainya diambil dari angka yang dilaporkan Windows (satu angka, bukan kiri/kanan/case). Nama, kecocokan perangkat, dan ambang sinyal ada di bagian `earbuds` pada `settings.json`
 - [x] Screenshot baru otomatis masuk Shelf
 - [x] Sleep timer musik 15/30/60 menit, volume memudar 10 detik lalu musik dijeda
 - [x] Jadwal kuliah mingguan: ketik `Senin 08:00-09:40 Basis Data @R301`, pengingat 10 menit sebelum kelas, hitung mundur di notch tertutup

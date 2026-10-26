@@ -55,6 +55,7 @@ In the closed notch:
 - **Notifications** for Caps Lock, keyboard language, charger / low battery, Wi-Fi / internet, audio output (e.g. headphones).
 - **Privacy dots**: orange while an app uses the microphone, green for the camera.
 - **Mascot**: when the PC has been idle, the clock steps aside and a pair of eyes appears; they doze off and say hi when you're back.
+- **Earbuds pop-up** (off by default; turn on in Settings → *Pop-up earbud*): open the case of your TWS earbuds near the PC and a pop-up appears in the notch. It listens for the Bluetooth LE advert with service `0xFD92` (e.g. KZ Vxs) and, while the earbuds are connected to this PC, shows the battery percentage that Windows reports (one number, not left/right/case). Name, device match and signal threshold are in the `earbuds` section of `settings.json`.
 - **Minimal mode**: the closed notch becomes a thin line for laptops with a thick top bezel.
 - **Gets out of the way**: when a tab or window sits behind the notch and your cursor heads there, the notch moves aside. Push the cursor against the very top edge to open the notch.
 

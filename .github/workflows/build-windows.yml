@@ -1,0 +1,31 @@
+# Bangun amora.exe dan AmoraSetup.exe di server GitHub (Windows), tanpa perlu memasang
+# Rust / Visual Studio di komputer sendiri.
+# Hasil: tab Actions -> pilih run terbaru -> bagian Artifacts -> "Amora-windows".
+name: Build Windows
+
+on:
+  push:
+    branches: [main, earbuds-popup]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build amora.exe dan AmoraSetup.exe
+        shell: pwsh
+        run: ./tools/build-installer.ps1
+
+      - name: Simpan hasil build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Amora-windows
+          path: |
+            target/release/amora.exe
+            dist/AmoraSetup.exe
+
+      - name: Unit test
+        run: cargo test --release

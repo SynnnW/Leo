@@ -3,6 +3,7 @@
 
 pub mod clipboard;
 pub mod clock;
+pub mod earbuds;
 pub mod media;
 pub mod osd;
 pub mod pomodoro;
@@ -37,6 +38,8 @@ pub enum Event {
     ClipboardChanged,
     /// Setelan diubah (halaman Setelan atau menu tray).
     SettingsChanged,
+    /// Case earbud terbuka (`opened`) atau angka baterainya baru terbaca.
+    Earbuds { opened: bool, percent: Option<u32> },
 }
 
 pub trait Module {

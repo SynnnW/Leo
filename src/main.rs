@@ -2,7 +2,9 @@
 
 mod anim;
 mod autostart;
+mod case_detect;
 mod crashlog;
+mod earbuds;
 mod gfx;
 mod keyboard;
 mod lyrics;
@@ -39,7 +41,7 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use anim::Spring;
 use gfx::{Align, Color, Gfx, Rect, BLACK, DIM, WHITE};
 use modules::{
-    clipboard, clipboard::Clipboard, clock::ClockModule, media::MediaModule, schedule::Schedule,
+    clipboard, clipboard::Clipboard, clock::ClockModule, earbuds::EarbudsPopup, media::MediaModule, schedule::Schedule,
     settings_page::SettingsPage, Poll, osd::Osd, pomodoro::Pomodoro, shelf, shelf::Shelf, todo::Todo,
     water::Water, Event, Module,
 };
@@ -117,6 +119,8 @@ struct App {
     /// File yang akan diseret keluar setelah `handle` selesai (di luar pinjaman APP).
     pending_drag: Option<PathBuf>,
     audio: Option<system::AudioWatch>,
+    /// Pemantau iklan BLE untuk pop-up earbud; ada hanya selama setelannya menyala.
+    earbuds: Option<earbuds::Watch>,
     /// Notifikasi kecerahan pertama hanyalah nilai awal, bukan perubahan.
     brightness_ready: bool,
     /// Status terakhir untuk notifikasi: hanya perubahan yang ditampilkan.
@@ -576,6 +580,16 @@ impl App {
         }
     }
 
+    /// Nyalakan/matikan pemindaian BLE sesuai setelan pop-up earbud.
+    fn sync_earbuds(&mut self) {
+        let cfg = self.settings.borrow().earbuds.clone();
+        match (cfg.enabled, self.earbuds.is_some()) {
+            (true, false) => self.earbuds = earbuds::Watch::start(self.hwnd, &cfg),
+            (false, true) => self.earbuds = None,
+            _ => {}
+        }
+    }
+
     /// Terapkan setelan yang butuh tindakan di luar modul, lalu beri tahu semua modul.
     fn apply_settings(&mut self) {
         let (clip, auto_hide) = {
@@ -591,6 +605,7 @@ impl App {
             self.auto_hide = auto_hide;
             self.recheck_covered();
         }
+        self.sync_earbuds();
         // Halaman yang sedang dibuka bisa hilang (mis. Clipboard dimatikan).
         if self.modules[self.page].tab().is_none() {
             self.page = self.tabs().first().copied().unwrap_or(0);
@@ -765,6 +780,9 @@ impl App {
                     let icon = if headphones { "🎧" } else { "🔊" };
                     self.notice(icon, name, "Output audio");
                 }
+            }
+            earbuds::WM_APP_EARBUDS => {
+                self.broadcast(Event::Earbuds { opened: wp.0 == 0, percent: earbuds::percent() });
             }
             WM_POWERBROADCAST => {
                 if let Some(p) = system::power_from(wp, lp) {
@@ -1119,6 +1137,7 @@ fn main() -> Result<()> {
         // Urutan = prioritas untuk notch tertutup, dan urutan halaman.
         let modules: Vec<Box<dyn Module>> = vec![
             Box::new(Osd::new()),
+            Box::new(EarbudsPopup::new(settings.clone())),
             Box::new(MediaModule::new(shared, handle, g.wic.clone(), lyrics, settings.clone())),
             Box::new(Pomodoro::new(settings.clone())),
             Box::new(Water::new(settings.clone())),
@@ -1146,6 +1165,7 @@ fn main() -> Result<()> {
             press: None,
             pending_drag: None,
             audio: system::AudioWatch::new(hwnd),
+            earbuds: None,
             brightness_ready: false,
             charger: None,
             battery: None,
@@ -1183,6 +1203,7 @@ fn main() -> Result<()> {
         privacy::watch(hwnd);
         with_app(|a| a.in_use = privacy::current());
         screenshots::watch(hwnd);
+        with_app(|a| a.sync_earbuds());
         {
             let s = settings.borrow();
             clipboard::listen(hwnd, s.clipboard || s.tidy_tables);
