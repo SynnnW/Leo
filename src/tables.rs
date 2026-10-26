@@ -77,8 +77,8 @@ pub fn from_html(fragment: &str) -> Option<Vec<Row>> {
     if lower.contains("urn:schemas-microsoft-com:office") || lower.contains("google-sheets-html-origin") {
         return None;
     }
-    // Sudah dirapikan oleh Amora.
-    if lower.contains("data-amora") {
+    // Sudah dirapikan oleh Leo (atau Amora, nama lama aplikasi ini).
+    if lower.contains("data-leo") || lower.contains("data-amora") {
         return None;
     }
     let start = lower.find("<table")?;
@@ -242,7 +242,7 @@ fn escape(s: &str) -> String {
 pub fn to_html(rows: &[Row]) -> String {
     let pct = column_widths(rows);
     let cell = "border:1pt solid #000000;padding:3pt 5pt;vertical-align:top;color:#000000;";
-    let mut out = String::from(r#"<table data-amora="1" border="1" style="border-collapse:collapse;width:100%;"><colgroup>"#);
+    let mut out = String::from(r#"<table data-leo="1" border="1" style="border-collapse:collapse;width:100%;"><colgroup>"#);
     for p in &pct {
         out.push_str(&format!(r#"<col width="{p}%" style="width:{p}%;">"#));
     }
@@ -319,7 +319,8 @@ mod tests {
         assert!(from_markdown("Penjelasan:\n| a | b |\n|---|---|\n| 1 | 2 |").is_none(), "ada teks selain tabel");
         assert!(from_html("<p>Teks pembuka</p><table><tr><td>a</td><td>b</td></tr><tr><td>1</td><td>2</td></tr></table>").is_none());
         assert!(from_html("<table><tr><td>satu kolom</td></tr><tr><td>x</td></tr></table>").is_none());
-        assert!(from_html(r#"<table data-amora="1"><tr><td>a</td><td>b</td></tr><tr><td>1</td><td>2</td></tr></table>"#).is_none());
+        assert!(from_html(r#"<table data-leo="1"><tr><td>a</td><td>b</td></tr><tr><td>1</td><td>2</td></tr></table>"#).is_none());
+        assert!(from_html(r#"<table data-amora="1"><tr><td>a</td><td>b</td></tr><tr><td>1</td><td>2</td></tr></table>"#).is_none(), "penanda lama tetap dikenali");
         assert!(from_html(r#"<html xmlns:o="urn:schemas-microsoft-com:office:office"><table><tr><td>a</td><td>b</td></tr><tr><td>1</td><td>2</td></tr></table>"#).is_none());
     }
 
@@ -340,7 +341,7 @@ mod tests {
         let html = to_html(&from_markdown(CHATGPT_MD).unwrap());
         let cf = cf_html(&html);
         assert_eq!(cf_html_fragment(&cf).unwrap(), html);
-        assert!(html.contains("border:1pt solid") && html.contains("data-amora"));
+        assert!(html.contains("border:1pt solid") && html.contains("data-leo"));
     }
 
     #[test]

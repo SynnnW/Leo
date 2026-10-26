@@ -1,6 +1,6 @@
-# Bangun amora.exe dan AmoraSetup.exe di server GitHub (Windows), tanpa perlu memasang
+# Bangun leo.exe dan LeoSetup.exe di server GitHub (Windows), tanpa perlu memasang
 # Rust / Visual Studio di komputer sendiri.
-# Hasil: tab Actions -> pilih run terbaru -> bagian Artifacts -> "Amora-windows".
+# Hasil: tab Actions -> pilih run terbaru -> bagian Artifacts -> "Leo-windows".
 name: Build Windows
 
 on:
@@ -15,17 +15,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build amora.exe dan AmoraSetup.exe
+      - name: Build leo.exe dan LeoSetup.exe
         shell: pwsh
         run: ./tools/build-installer.ps1
 
       - name: Simpan hasil build
         uses: actions/upload-artifact@v4
         with:
-          name: Amora-windows
+          name: Leo-windows
           path: |
-            target/release/amora.exe
-            dist/AmoraSetup.exe
+            target/release/leo.exe
+            dist/LeoSetup.exe
 
       - name: Unit test
         run: cargo test --release

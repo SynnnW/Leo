@@ -152,7 +152,9 @@ unsafe fn put(fmt: u32, bytes: &[u8]) -> bool {
 fn table_to_tidy(html: Option<&[u8]>, text: Option<&str>) -> Option<Vec<crate::tables::Row>> {
     // Sudah dirapikan (termasuk hasil tulisan kita sendiri barusan). Tanpa ini teks
     // Markdown-nya akan dirapikan lagi, ditulis lagi, dan begitu seterusnya.
-    if html.is_some_and(|h| h.windows(10).any(|w| w == b"data-amora")) {
+    // `data-amora`: penanda lama dari sebelum nama aplikasi menjadi Leo.
+    let own = |h: &[u8]| h.windows(8).any(|w| w == b"data-leo") || h.windows(10).any(|w| w == b"data-amora");
+    if html.is_some_and(own) {
         return None;
     }
     html.and_then(crate::tables::cf_html_fragment)
@@ -324,7 +326,7 @@ mod tests {
 | 1 | 2 |
 | 3 | 4 |";
         let rows = table_to_tidy(None, Some(md)).expect("Markdown dirapikan");
-        // Hasil tulisan Amora sendiri (HTML rapi + teks Markdown yang sama) tidak dirapikan lagi.
+        // Hasil tulisan Leo sendiri (HTML rapi + teks Markdown yang sama) tidak dirapikan lagi.
         let ours = cf_html(&to_html(&rows));
         assert!(table_to_tidy(Some(&ours), Some(md)).is_none());
     }

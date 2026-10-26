@@ -60,7 +60,7 @@ pub struct MediaModule {
     line_anim: Option<Instant>,
     sleep: Option<Sleep>,
     marquee: Option<Marquee>,
-    /// Lagu palsu untuk pengembangan (`AMORA_DEMO_LYRIC`); abaikan SMTC.
+    /// Lagu palsu untuk pengembangan (`LEO_DEMO_LYRIC`); abaikan SMTC.
     demo: bool,
 }
 
@@ -97,7 +97,7 @@ struct Sleep {
 }
 
 impl Drop for MediaModule {
-    /// Amora ditutup di tengah volume memudar: kembalikan volumenya.
+    /// Leo ditutup di tengah volume memudar: kembalikan volumenya.
     fn drop(&mut self) {
         if let Some(Sleep { fade_from: Some(v), .. }) = self.sleep.take() {
             crate::system::set_master_volume(v);
@@ -187,13 +187,13 @@ impl MediaModule {
             marquee: None,
             demo: false,
         };
-        // Untuk pengembangan: `AMORA_DEMO_LYRIC="<baris>"` memutar lagu palsu dengan baris
+        // Untuk pengembangan: `LEO_DEMO_LYRIC="<baris>"` memutar lagu palsu dengan baris
         // lirik itu (8 detik), lalu satu baris pendek. Untuk menguji tampilan lirik tanpa musik.
-        if let Ok(text) = std::env::var("AMORA_DEMO_LYRIC") {
+        if let Ok(text) = std::env::var("LEO_DEMO_LYRIC") {
             m.demo = true;
             m.info = Some(MediaInfo {
                 title: "Lagu Uji".into(),
-                artist: "Amora".into(),
+                artist: "Leo".into(),
                 playing: true,
                 position: 0.0,
                 duration: 200.0,

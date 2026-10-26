@@ -1,4 +1,4 @@
-//! Catatan kejadian penting di %LOCALAPPDATA%\Amora\log.txt, terutama panic.
+//! Catatan kejadian penting di %LOCALAPPDATA%\Leo\log.txt, terutama panic.
 //! Build release memakai `panic = "abort"`, jadi tanpa ini crash hilang tanpa jejak.
 
 use std::io::Write;
@@ -21,7 +21,7 @@ pub fn write(line: &str) {
         t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond
     );
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
-        let _ = writeln!(f, "[{stamp}] Amora {} {line}", env!("CARGO_PKG_VERSION"));
+        let _ = writeln!(f, "[{stamp}] Leo {} {line}", env!("CARGO_PKG_VERSION"));
     }
 }
 

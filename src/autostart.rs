@@ -8,7 +8,9 @@ use windows::Win32::System::Registry::*;
 const RUN: PCWSTR = w!("Software\\Microsoft\\Windows\\CurrentVersion\\Run");
 /// Tempat Task Manager mencatat app startup yang dimatikan pengguna.
 const APPROVED: PCWSTR = w!("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run");
-const NAME: PCWSTR = w!("Amora");
+const NAME: PCWSTR = w!("Leo");
+/// Nama entri dari sebelum aplikasi ini bernama Leo; dibersihkan agar tidak jalan dobel.
+const LEGACY_NAME: PCWSTR = w!("Amora");
 
 fn exe_command() -> Option<String> {
     let exe = std::env::current_exe().ok()?;
@@ -61,6 +63,8 @@ pub fn set(enabled: bool) {
                 Some(wide.as_ptr() as *const c_void),
                 (wide.len() * 2) as u32,
             );
+            let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, RUN, LEGACY_NAME);
+            let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, APPROVED, LEGACY_NAME);
             // Hapus tanda "dimatikan" lama supaya pilihan baru ini yang berlaku.
             let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, APPROVED, NAME);
         } else {

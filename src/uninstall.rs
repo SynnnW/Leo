@@ -1,4 +1,4 @@
-//! `amora.exe --uninstall`, dipanggil dari Settings → Apps. Kebalikan dari installer:
+//! `leo.exe --uninstall`, dipanggil dari Settings → Apps. Kebalikan dari installer:
 //! hapus autostart, shortcut, entri uninstall, (opsional) data pengguna, lalu folder program.
 
 use std::os::windows::process::CommandExt;
@@ -10,21 +10,21 @@ use windows::Win32::Foundation::*;
 use windows::Win32::System::Registry::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
-const UNINSTALL_KEY: PCWSTR = w!(r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Amora");
+const UNINSTALL_KEY: PCWSTR = w!(r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Leo");
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 fn ask(text: &str, flags: MESSAGEBOX_STYLE) -> MESSAGEBOX_RESULT {
-    unsafe { MessageBoxW(None, &HSTRING::from(text), w!("Amora"), flags) }
+    unsafe { MessageBoxW(None, &HSTRING::from(text), w!("Leo"), flags) }
 }
 
 fn install_dir() -> Option<PathBuf> {
-    Some(PathBuf::from(std::env::var_os("LOCALAPPDATA")?).join("Programs").join("Amora"))
+    Some(PathBuf::from(std::env::var_os("LOCALAPPDATA")?).join("Programs").join("Leo"))
 }
 
 fn close_running() {
     unsafe {
         for _ in 0..30 {
-            let Ok(h) = FindWindowW(w!("AmoraNotch"), None) else { return };
+            let Ok(h) = FindWindowW(w!("LeoNotch"), None) else { return };
             if h.is_invalid() {
                 return;
             }
@@ -36,18 +36,18 @@ fn close_running() {
 
 /// `quiet`: tanpa pertanyaan (untuk pengujian/otomatisasi); `wipe` lalu menentukan data dihapus.
 pub fn run(quiet: bool, wipe_data: bool) {
-    if !quiet && ask("Hapus Amora dari komputer ini?", MB_YESNO | MB_ICONQUESTION) != IDYES {
+    if !quiet && ask("Hapus Leo dari komputer ini?", MB_YESNO | MB_ICONQUESTION) != IDYES {
         return;
     }
     let wipe = if quiet { wipe_data } else { ask(
-        "Hapus juga data Anda?\n\nTugas, jadwal kuliah, catatan minum, isi Shelf, cache lirik, dan setelan.\nPilih \"No\" untuk menyimpannya (berguna bila nanti memasang Amora lagi).",
+        "Hapus juga data Anda?\n\nTugas, jadwal kuliah, catatan minum, isi Shelf, cache lirik, dan setelan.\nPilih \"No\" untuk menyimpannya (berguna bila nanti memasang Leo lagi).",
         MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
     ) == IDYES };
 
     close_running();
     crate::autostart::set(false);
     if let Some(appdata) = std::env::var_os("APPDATA") {
-        let _ = std::fs::remove_file(PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs\Amora.lnk"));
+        let _ = std::fs::remove_file(PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs\Leo.lnk"));
     }
     unsafe {
         let _ = RegDeleteTreeW(HKEY_CURRENT_USER, UNINSTALL_KEY);
@@ -70,6 +70,6 @@ pub fn run(quiet: bool, wipe_data: bool) {
         }
     }
     if !quiet {
-        ask("Amora sudah dihapus. Terima kasih sudah mencobanya.", MB_OK | MB_ICONINFORMATION);
+        ask("Leo sudah dihapus. Terima kasih sudah mencobanya.", MB_OK | MB_ICONINFORMATION);
     }
 }

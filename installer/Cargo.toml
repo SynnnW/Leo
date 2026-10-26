@@ -1,12 +1,12 @@
 [package]
-name = "amora-setup"
+name = "leo-setup"
 version = "0.3.0"
 edition = "2021"
-description = "Installer Amora"
+description = "Installer Leo"
 build = "build.rs"
 
 [[bin]]
-name = "AmoraSetup"
+name = "LeoSetup"
 path = "src/main.rs"
 
 [dependencies]

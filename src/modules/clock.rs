@@ -57,8 +57,8 @@ fn chevron(g: &Gfx, x: f32, y: f32, c: Color) {
 
 impl ClockModule {
     pub fn new(settings: SharedSettings) -> Self {
-        // Untuk pengembangan: `AMORA_MASCOT=mata|tidur|halo` memaksa keadaan maskot.
-        let mascot = match std::env::var("AMORA_MASCOT").as_deref() {
+        // Untuk pengembangan: `LEO_MASCOT=mata|tidur|halo` memaksa keadaan maskot.
+        let mascot = match std::env::var("LEO_MASCOT").as_deref() {
             Ok("mata") => Mascot::Eyes { since: Instant::now() },
             Ok("tidur") => Mascot::Asleep,
             Ok("halo") => Mascot::Hello { until: Instant::now() + Duration::from_secs(3600) },
@@ -162,7 +162,7 @@ impl Module for ClockModule {
     }
 
     fn poll(&mut self) -> Poll {
-        if std::env::var_os("AMORA_MASCOT").is_some() {
+        if std::env::var_os("LEO_MASCOT").is_some() {
             return Poll::Idle;
         }
         if !self.enabled() {

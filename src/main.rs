@@ -77,7 +77,7 @@ const TIMER_NET: usize = 7;
 const NET_SETTLE_MS: u32 = 2000;
 const LOW_BATTERY: [u32; 2] = [20, 10];
 /// Proses clipboard sedikit setelah berubah, supaya aplikasi penyalin selesai menulis
-/// dulu dan tidak terganggu oleh Amora yang ikut membuka clipboard.
+/// dulu dan tidak terganggu oleh Leo yang ikut membuka clipboard.
 const TIMER_CLIP: usize = 8;
 const CLIP_SETTLE_MS: u32 = 150;
 const DODGE_MS: u32 = 80;
@@ -340,8 +340,8 @@ impl App {
             let m = mi.rcMonitor;
             self.origin = POINT { x: m.left + (m.right - m.left - pw) / 2, y: m.top };
             if dev_instance() {
-                // `AMORA_DEV_X=<piksel>` menggeser instance uji ke tempat lain (layar sempit).
-                let dx = std::env::var("AMORA_DEV_X").ok().and_then(|v| v.parse().ok());
+                // `LEO_DEV_X=<piksel>` menggeser instance uji ke tempat lain (layar sempit).
+                let dx = std::env::var("LEO_DEV_X").ok().and_then(|v| v.parse().ok());
                 self.origin.x += dx.unwrap_or(pw * 3 / 4);
             }
             if pw != self.g.px_w || ph != self.g.px_h || scale != self.g.scale {
@@ -857,16 +857,16 @@ impl App {
     }
 }
 
-/// Untuk pengembangan: `AMORA_FORCE_OPEN=1` membuat notch selalu terbuka.
+/// Untuk pengembangan: `LEO_FORCE_OPEN=1` membuat notch selalu terbuka.
 fn dev_instance() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("AMORA_DEV").is_some())
+    *ON.get_or_init(|| std::env::var_os("LEO_DEV").is_some())
 }
 
 /// Dibaca sekali saja: `is_open()` dipanggil berkali-kali di setiap frame.
 fn force_open() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("AMORA_FORCE_OPEN").is_some())
+    *ON.get_or_init(|| std::env::var_os("LEO_FORCE_OPEN").is_some())
 }
 
 const CMD_EXIT: usize = 1;
@@ -888,11 +888,11 @@ fn show_menu(hwnd: HWND) {
         });
         let check = |on: bool| if on { MF_CHECKED } else { MF_UNCHECKED };
         let _ = AppendMenuW(menu, MF_STRING | check(auto), CMD_AUTOSTART, w!("Mulai bersama Windows"));
-        let _ = AppendMenuW(menu, MF_STRING | check(mascot), CMD_MASCOT, w!("Maskot Amora"));
+        let _ = AppendMenuW(menu, MF_STRING | check(mascot), CMD_MASCOT, w!("Maskot Leo"));
         let _ = AppendMenuW(menu, MF_STRING | check(minimal), CMD_MINIMAL, w!("Notch minimal"));
         let _ = AppendMenuW(menu, MF_STRING | check(clip), CMD_CLIPBOARD, w!("Riwayat clipboard"));
         let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
-        let _ = AppendMenuW(menu, MF_STRING, CMD_ABOUT, w!("Tentang Amora"));
+        let _ = AppendMenuW(menu, MF_STRING, CMD_ABOUT, w!("Tentang Leo"));
         let _ = AppendMenuW(menu, MF_STRING, CMD_EXIT, w!("Keluar"));
         let mut pt = POINT::default();
         let _ = GetCursorPos(&mut pt);
@@ -923,13 +923,13 @@ fn show_menu(hwnd: HWND) {
             }),
             CMD_ABOUT => {
                 let text = HSTRING::from(format!(
-                    "Amora {}
+                    "Leo {}
 Notch hidup di tepi atas layar Windows.
 
 Lirik dari LRCLIB (lrclib.net). Hanya judul, artis, dan durasi lagu yang dikirim.",
                     env!("CARGO_PKG_VERSION")
                 ));
-                MessageBoxW(hwnd, &text, w!("Tentang Amora"), MB_OK | MB_ICONINFORMATION);
+                MessageBoxW(hwnd, &text, w!("Tentang Leo"), MB_OK | MB_ICONINFORMATION);
             }
             _ => {}
         }
@@ -1046,7 +1046,7 @@ fn main() -> Result<()> {
     if args.get(1).map(String::as_str) == Some("--probe-lyrics") {
         return lyrics::probe(&args[2], &args[3], args[4].parse().unwrap_or(0.0));
     }
-    // Untuk pengembangan: `amora --probe-table <file CF_HTML atau teks>` menampilkan hasil urai.
+    // Untuk pengembangan: `leo --probe-table <file CF_HTML atau teks>` menampilkan hasil urai.
     if args.get(1).map(String::as_str) == Some("--probe-table") {
         let bytes = std::fs::read(&args[2]).unwrap_or_default();
         let rows = tables::cf_html_fragment(&bytes)
@@ -1063,7 +1063,7 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
-    // Untuk pengembangan: `amora --crash-test` memastikan panic tercatat di log.txt.
+    // Untuk pengembangan: `leo --crash-test` memastikan panic tercatat di log.txt.
     if args.get(1).map(String::as_str) == Some("--crash-test") {
         panic!("uji log crash");
     }
@@ -1073,7 +1073,7 @@ fn main() -> Result<()> {
         uninstall::run(has("--quiet"), has("--wipe"));
         return Ok(());
     }
-    // Untuk pengembangan: `amora --probe-system` mencetak status yang dipakai notifikasi.
+    // Untuk pengembangan: `leo --probe-system` mencetak status yang dipakai notifikasi.
     if args.get(1).map(String::as_str) == Some("--probe-system") {
         unsafe {
             let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
@@ -1083,7 +1083,7 @@ fn main() -> Result<()> {
         println!("bahasa keyboard: {:?}", keyboard::language(keyboard::current_layout()));
         return Ok(());
     }
-    // Untuk pengembangan: `amora --autostart on|off|status`
+    // Untuk pengembangan: `leo --autostart on|off|status`
     if args.get(1).map(String::as_str) == Some("--autostart") {
         match args.get(2).map(String::as_str) {
             Some("on") => autostart::set(true),
@@ -1095,8 +1095,8 @@ fn main() -> Result<()> {
     }
     unsafe {
         // Satu instance saja.
-        // `AMORA_DEV=1`: instance uji yang boleh jalan berdampingan (digeser ke kanan).
-        let _mutex = CreateMutexW(None, true, w!("Local\\AmoraNotch"))?;
+        // `LEO_DEV=1`: instance uji yang boleh jalan berdampingan (digeser ke kanan).
+        let _mutex = CreateMutexW(None, true, w!("Local\\LeoNotch"))?;
         if GetLastError() == ERROR_ALREADY_EXISTS && !dev_instance() {
             return Ok(());
         }
@@ -1105,7 +1105,7 @@ fn main() -> Result<()> {
         OleInitialize(None)?;
 
         let hinst = GetModuleHandleW(None)?;
-        let class = w!("AmoraNotch");
+        let class = w!("LeoNotch");
         let wc = WNDCLASSW {
             lpfnWndProc: Some(wndproc),
             hInstance: hinst.into(),
@@ -1117,7 +1117,7 @@ fn main() -> Result<()> {
         let hwnd = CreateWindowExW(
             WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
             class,
-            w!("Amora"),
+            w!("Leo"),
             WS_POPUP,
             0,
             0,
@@ -1183,7 +1183,7 @@ fn main() -> Result<()> {
             animating: false,
         };
         app.current = app.active_index();
-        if let Ok(name) = std::env::var("AMORA_PAGE") {
+        if let Ok(name) = std::env::var("LEO_PAGE") {
             if let Some(i) = app.modules.iter().position(|m| m.tab() == Some(name.as_str())) {
                 app.page = i;
             }

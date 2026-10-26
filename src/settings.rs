@@ -1,4 +1,4 @@
-//! Setelan pengguna, disimpan di %LOCALAPPDATA%\Amora\settings.json.
+//! Setelan pengguna, disimpan di %LOCALAPPDATA%\Leo\settings.json.
 //! Semua modul memakai satu salinan bersama supaya simpan tidak saling menimpa.
 
 use std::cell::RefCell;
@@ -58,7 +58,7 @@ pub struct EarbudsCfg {
     pub label: String,
     /// Sebagian nama perangkat di Windows untuk membaca baterai (tanpa membedakan huruf besar/kecil).
     pub device_match: String,
-    /// Case dianggap terbuka bila sinyal lebih kuat dari ini (dBm). Berlaku setelah Amora dijalankan ulang.
+    /// Case dianggap terbuka bila sinyal lebih kuat dari ini (dBm). Berlaku setelah Leo dijalankan ulang.
     pub open_rssi: i32,
 }
 
@@ -103,7 +103,32 @@ impl Default for WaterCfg {
 }
 
 pub fn data_dir() -> Option<PathBuf> {
-    Some(PathBuf::from(std::env::var_os("LOCALAPPDATA")?).join("Amora"))
+    static MIGRATE: std::sync::Once = std::sync::Once::new();
+    let base = PathBuf::from(std::env::var_os("LOCALAPPDATA")?);
+    let dir = base.join("Leo");
+    MIGRATE.call_once(|| migrate_legacy_dir(&base.join("Amora"), &dir));
+    Some(dir)
+}
+
+/// Aplikasi ini dulu bernama Amora. Bila folder data Leo belum ada tapi folder Amora ada,
+/// salin isinya (setelan, tugas, jadwal, cache lirik) supaya tidak mulai dari nol. Folder lama dibiarkan.
+fn migrate_legacy_dir(old: &std::path::Path, new: &std::path::Path) {
+    fn copy_dir(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()> {
+        std::fs::create_dir_all(to)?;
+        for entry in std::fs::read_dir(from)? {
+            let entry = entry?;
+            let target = to.join(entry.file_name());
+            if entry.file_type()?.is_dir() {
+                copy_dir(&entry.path(), &target)?;
+            } else {
+                std::fs::copy(entry.path(), target)?;
+            }
+        }
+        Ok(())
+    }
+    if !new.exists() && old.is_dir() {
+        let _ = copy_dir(old, new);
+    }
 }
 
 /// Baca file JSON di folder data; `None` bila belum ada atau rusak.
@@ -120,7 +145,7 @@ pub fn load_json<T: for<'de> Deserialize<'de>>(name: &str) -> Option<T> {
 }
 
 /// Tulis ke file sementara lalu ganti nama, supaya file lama tetap utuh bila
-/// penulisan terputus (listrik mati, Amora dimatikan paksa).
+/// penulisan terputus (listrik mati, Leo dimatikan paksa).
 pub fn save_json<T: Serialize>(name: &str, v: &T) {
     let Some(dir) = data_dir() else { return };
     let _ = std::fs::create_dir_all(&dir);
@@ -158,6 +183,27 @@ mod tests {
         assert!(!s.earbuds.enabled, "pop-up earbud mati secara default");
         assert_eq!(s.earbuds.device_match, "vxs");
         assert_eq!(s.earbuds.open_rssi, -50);
+    }
+
+    #[test]
+    fn legacy_amora_folder_is_copied_once() {
+        let root = std::env::temp_dir().join(format!("leo-mig-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let old = root.join("Amora");
+        std::fs::create_dir_all(old.join("lyrics")).unwrap();
+        std::fs::write(old.join("settings.json"), "{}").unwrap();
+        std::fs::write(old.join("lyrics").join("a.json"), "x").unwrap();
+        let new = root.join("Leo");
+
+        migrate_legacy_dir(&old, &new);
+        assert!(new.join("settings.json").exists() && new.join("lyrics").join("a.json").exists());
+        assert!(old.join("settings.json").exists(), "folder lama dibiarkan");
+
+        // Folder Leo sudah ada: isinya tidak ditimpa.
+        std::fs::write(new.join("settings.json"), "baru").unwrap();
+        migrate_legacy_dir(&old, &new);
+        assert_eq!(std::fs::read_to_string(new.join("settings.json")).unwrap(), "baru");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

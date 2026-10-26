@@ -55,7 +55,7 @@ impl Water {
         if log.day != day(now_ms()) {
             log = Log { day: day(now_ms()), entries: Vec::new() };
         }
-        // Hitung pengingat pertama sejak Amora dibuka, bukan langsung berbunyi saat startup.
+        // Hitung pengingat pertama sejak Leo dibuka, bukan langsung berbunyi saat startup.
         let last_alert = Some(minute_of_day(now_ms()));
         Self { settings, log, last_alert, alerting: false }
     }

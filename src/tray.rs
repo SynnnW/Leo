@@ -37,7 +37,7 @@ pub fn add(hwnd: HWND) {
         nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP;
         nid.uCallbackMessage = WM_TRAY;
         nid.hIcon = make_icon().unwrap_or_default();
-        let tip: Vec<u16> = "Amora".encode_utf16().collect();
+        let tip: Vec<u16> = "Leo".encode_utf16().collect();
         nid.szTip[..tip.len()].copy_from_slice(&tip);
         let _ = Shell_NotifyIconW(NIM_ADD, &nid);
         nid.Anonymous.uVersion = NOTIFYICON_VERSION_4;

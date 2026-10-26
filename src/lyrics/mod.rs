@@ -19,7 +19,7 @@ use matcher::{candidates, free_query, parse_lrc, title_distance, Query};
 
 const HOST: &str = "lrclib.net";
 const API: &str = "/api";
-const USER_AGENT: &str = concat!("Amora/", env!("CARGO_PKG_VERSION"));
+const USER_AGENT: &str = concat!("Leo/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Debug)]
 pub enum Lyrics {
@@ -282,7 +282,7 @@ pub fn probe(title: &str, artist: &str, duration: f64) -> windows::core::Result<
     Ok(())
 }
 
-// ---- cache di disk: %LOCALAPPDATA%\Amora\lyrics ----
+// ---- cache di disk: %LOCALAPPDATA%\Leo\lyrics ----
 
 fn cache_path(key: &str) -> Option<PathBuf> {
     // FNV-1a supaya nama file pendek dan aman.

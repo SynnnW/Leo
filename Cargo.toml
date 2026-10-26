@@ -1,5 +1,5 @@
 [package]
-name = "amora"
+name = "leo"
 version = "0.3.0"
 edition = "2021"
 description = "Notch hidup di tepi atas layar Windows"
@@ -7,7 +7,7 @@ build = "build.rs"
 
 [workspace]
 members = ["installer"]
-# `cargo build` biasa hanya membangun Amora; installer lewat tools/build-installer.ps1.
+# `cargo build` biasa hanya membangun Leo; installer lewat tools/build-installer.ps1.
 default-members = ["."]
 
 [dependencies]

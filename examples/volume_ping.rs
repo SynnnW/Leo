@@ -1,5 +1,5 @@
 //! Diagnostik OSD: geser volume 1% lalu kembalikan ke semula (Windows hanya mengirim
-//! notifikasi bila nilainya benar-benar berubah). OSD Amora harus muncul.
+//! notifikasi bila nilainya benar-benar berubah). OSD Leo harus muncul.
 //! Jalankan: cargo run --example volume_ping
 
 use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;

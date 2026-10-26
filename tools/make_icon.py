@@ -1,4 +1,4 @@
-"""Buat assets/amora.ico: kotak gelap membulat dengan notch putih dan titik hijau.
+"""Buat assets/leo.ico: kotak gelap membulat dengan notch putih dan titik hijau.
 
 Jalankan: python tools/make_icon.py  (butuh Pillow)
 """
@@ -35,7 +35,7 @@ def draw() -> Image.Image:
 
 
 def main() -> None:
-    out = Path(__file__).resolve().parent.parent / "assets" / "amora.ico"
+    out = Path(__file__).resolve().parent.parent / "assets" / "leo.ico"
     out.parent.mkdir(exist_ok=True)
     big = draw()
     sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256]

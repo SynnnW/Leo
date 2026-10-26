@@ -1,8 +1,8 @@
-# Amora
+# Leo
 
 **English** · [Bahasa Indonesia](README.id.md)
 
-<img src="assets/amora.png" width="96" align="right" alt="Amora icon">
+<img src="assets/leo.png" width="96" align="right" alt="Leo icon">
 
 A living notch for the top edge of Windows. It shows your music with synced lyrics,
 a focus timer, water reminders, to-dos, your class schedule, a file shelf and more —
@@ -10,16 +10,19 @@ then quietly gets out of the way.
 
 Native Rust + Direct2D, no web engine: about 30–40 MB of RAM and no CPU while idle.
 
+> **Leo** is a personal fork of [Amora](https://github.com/Merakkk/Amora) (MIT, © Helris). The notch core, lyrics and most modules come from Amora;
+> Leo renames it and adds features on top (earbuds pop-up and more). See `LICENSE`.
+
 ## Install
 
-Download `AmoraSetup.exe` from [Releases](../../releases) and run it.
+Download `LeoSetup.exe` from [Releases](../../releases) and run it.
 
-- Installs for your account only in `%LOCALAPPDATA%\Programs\Amora` — no admin rights.
+- Installs for your account only in `%LOCALAPPDATA%\Programs\Leo` — no admin rights.
 - Adds a Start Menu shortcut, starts with Windows, and launches right away.
-- Uninstall anytime from **Settings → Apps → Amora** (you choose whether to keep your data).
+- Uninstall anytime from **Settings → Apps → Leo** (you choose whether to keep your data).
 
 The installer is not code-signed yet, so Windows SmartScreen may warn you.
-Click **More info → Run anyway**. Each release lists the SHA-256 of `AmoraSetup.exe`
+Click **More info → Run anyway**. Each release lists the SHA-256 of `LeoSetup.exe`
 so you can verify the file.
 
 Requires Windows 10 (1809+) or Windows 11, 64-bit.
@@ -43,7 +46,7 @@ Hover the notch to open it; scroll or click the page names to switch pages.
 
 **Tidy tables for Google Docs / Word.** Copy a table from Claude, ChatGPT or Gemini — by
 selecting it or with a "copy table" button — and just press Ctrl+V in Google Docs or Word:
-Amora has already swapped it for a clean table with borders, a bold header row and column
+Leo has already swapped it for a clean table with borders, a bold header row and column
 widths that fit the content, in your document's own font. The plain text on
 the clipboard is left untouched, so pasting into a text editor or a chat still gives the same
 text. Spreadsheet tables (Excel, Google Sheets) and copies that include text outside the
@@ -64,7 +67,7 @@ Right-click the notch or the tray icon for the menu.
 ## Privacy
 
 No accounts, no analytics. Tasks, schedule, water log, shelf, settings and a local crash
-log (`log.txt`, never sent anywhere) stay in `%LOCALAPPDATA%\Amora`. The only network traffic is to LRCLIB when lyrics are turned on
+log (`log.txt`, never sent anywhere) stay in `%LOCALAPPDATA%\Leo`. The only network traffic is to LRCLIB when lyrics are turned on
 (off by default): song title, artist and duration. The keyboard hook only reacts to
 Caps Lock and the language-switch keys; nothing you type is recorded.
 
@@ -76,7 +79,7 @@ Needs Rust (MSVC toolchain) and Visual Studio Build Tools with the Windows SDK.
 cargo run --release
 ```
 
-Build the installer (`dist\AmoraSetup.exe` plus its SHA-256):
+Build the installer (`dist\LeoSetup.exe` plus its SHA-256):
 
 ```
 powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
@@ -88,7 +91,7 @@ Developer flags are listed in [README.id.md](README.id.md#menjalankan-dari-kode)
 ## Inspiration
 
 Inspired by [Nusa](https://rama2555.github.io/nusa/) for Windows and the macOS notch apps
-such as [boring.notch](https://github.com/TheBoredTeam/boring.notch). Amora is an
+such as [boring.notch](https://github.com/TheBoredTeam/boring.notch). Leo is an
 independent implementation; no code was copied from those projects.
 
 ## License

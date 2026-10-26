@@ -22,7 +22,7 @@ pub const WM_APP_VOLUME: u32 = WM_APP + 4;
 /// Perangkat audio default berganti (mis. headphone dicolok): daftarkan ulang.
 pub const WM_APP_AUDIO_DEVICE: u32 = WM_APP + 5;
 
-/// Saat Amora sendiri mengubah volume (sleep timer), jangan tampilkan OSD.
+/// Saat Leo sendiri mengubah volume (sleep timer), jangan tampilkan OSD.
 static QUIET: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 pub fn set_quiet(on: bool) {

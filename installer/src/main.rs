@@ -1,6 +1,6 @@
-//! Installer Amora: satu exe kecil yang membawa amora.exe di dalamnya.
-//! Memasang ke %LOCALAPPDATA%\Programs\Amora untuk pengguna ini saja (tanpa hak admin),
-//! membuat shortcut Start Menu, mendaftar di Settings → Apps, lalu menjalankan Amora.
+//! Installer Leo: satu exe kecil yang membawa leo.exe di dalamnya.
+//! Memasang ke %LOCALAPPDATA%\Programs\Leo untuk pengguna ini saja (tanpa hak admin),
+//! membuat shortcut Start Menu, mendaftar di Settings → Apps, lalu menjalankan Leo.
 
 #![windows_subsystem = "windows"]
 
@@ -14,10 +14,10 @@ use windows::Win32::System::Registry::*;
 use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
-/// Disalin oleh build.rs dari amora.exe yang dibangun tools/build-installer.ps1.
-const AMORA_EXE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/amora.exe"));
+/// Disalin oleh build.rs dari leo.exe yang dibangun tools/build-installer.ps1.
+const LEO_EXE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/leo.exe"));
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Amora";
+const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Leo";
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 
 fn wide(s: &str) -> Vec<u16> {
@@ -25,22 +25,22 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 fn ask(text: &str, flags: MESSAGEBOX_STYLE) -> MESSAGEBOX_RESULT {
-    unsafe { MessageBoxW(None, &HSTRING::from(text), w!("Amora"), flags) }
+    unsafe { MessageBoxW(None, &HSTRING::from(text), w!("Leo"), flags) }
 }
 
 fn install_dir() -> Option<PathBuf> {
-    Some(PathBuf::from(std::env::var_os("LOCALAPPDATA")?).join("Programs").join("Amora"))
+    Some(PathBuf::from(std::env::var_os("LOCALAPPDATA")?).join("Programs").join("Leo"))
 }
 
 fn shortcut_path() -> Option<PathBuf> {
-    Some(PathBuf::from(std::env::var_os("APPDATA")?).join(r"Microsoft\Windows\Start Menu\Programs\Amora.lnk"))
+    Some(PathBuf::from(std::env::var_os("APPDATA")?).join(r"Microsoft\Windows\Start Menu\Programs\Leo.lnk"))
 }
 
-/// Tutup Amora yang sedang berjalan supaya exe-nya bisa ditimpa.
+/// Tutup Leo yang sedang berjalan supaya exe-nya bisa ditimpa.
 fn close_running() {
     unsafe {
         for _ in 0..30 {
-            let Ok(h) = FindWindowW(w!("AmoraNotch"), None) else { return };
+            let Ok(h) = FindWindowW(w!("LeoNotch"), None) else { return };
             if h.is_invalid() {
                 return;
             }
@@ -54,7 +54,7 @@ fn write_exe(path: &Path) -> std::io::Result<()> {
     // Exe lama mungkin baru saja ditutup dan masih terkunci sebentar.
     let mut last = Ok(());
     for _ in 0..20 {
-        last = std::fs::write(path, AMORA_EXE);
+        last = std::fs::write(path, LEO_EXE);
         if last.is_ok() {
             return Ok(());
         }
@@ -109,15 +109,15 @@ fn register_uninstall(dir: &Path, exe: &Path) {
         }
     }
     let exe_s = exe.display().to_string();
-    set_string(key, "DisplayName", "Amora");
+    set_string(key, "DisplayName", "Leo");
     set_string(key, "DisplayVersion", VERSION);
-    set_string(key, "Publisher", "Amora");
+    set_string(key, "Publisher", "Leo");
     set_string(key, "DisplayIcon", &format!("{exe_s},0"));
     set_string(key, "InstallLocation", &dir.display().to_string());
     set_string(key, "UninstallString", &format!("\"{exe_s}\" --uninstall"));
     set_dword(key, "NoModify", 1);
     set_dword(key, "NoRepair", 1);
-    set_dword(key, "EstimatedSize", (AMORA_EXE.len() / 1024) as u32);
+    set_dword(key, "EstimatedSize", (LEO_EXE.len() / 1024) as u32);
     unsafe {
         let _ = RegCloseKey(key);
     }
@@ -129,25 +129,25 @@ fn enable_autostart(exe: &Path) {
     let mut key = HKEY::default();
     unsafe {
         if RegCreateKeyW(HKEY_CURRENT_USER, PCWSTR(path.as_ptr()), &mut key).is_ok() {
-            set_string(key, "Amora", &format!("\"{}\"", exe.display()));
+            set_string(key, "Leo", &format!("\"{}\"", exe.display()));
             let _ = RegCloseKey(key);
         }
     }
 }
 
 fn main() {
-    // `/S`: pasang tanpa pertanyaan dan tanpa menjalankan Amora (otomatisasi/pengujian).
+    // `/S`: pasang tanpa pertanyaan dan tanpa menjalankan Leo (otomatisasi/pengujian).
     let silent = std::env::args().any(|a| a.eq_ignore_ascii_case("/S"));
     let Some(dir) = install_dir() else { return };
-    let exe = dir.join("amora.exe");
+    let exe = dir.join("leo.exe");
     let first_time = !exe.exists();
     let question = if first_time {
         format!(
-            "Pasang Amora {VERSION}?\n\nAmora dipasang untuk akun Anda saja di:\n{}\n\nTanpa hak admin, dan bisa dihapus kapan saja dari Settings → Apps.",
+            "Pasang Leo {VERSION}?\n\nLeo dipasang untuk akun Anda saja di:\n{}\n\nTanpa hak admin, dan bisa dihapus kapan saja dari Settings → Apps.",
             dir.display()
         )
     } else {
-        format!("Perbarui Amora ke versi {VERSION}?\n\nSetelan, tugas, dan jadwal Anda tetap tersimpan.")
+        format!("Perbarui Leo ke versi {VERSION}?\n\nSetelan, tugas, dan jadwal Anda tetap tersimpan.")
     };
     if !silent && ask(&question, MB_OKCANCEL | MB_ICONINFORMATION) != IDOK {
         return;
@@ -161,7 +161,7 @@ fn main() {
     }
     if let Err(e) = std::fs::create_dir_all(&dir).and_then(|_| write_exe(&exe)) {
         if !silent {
-            ask(&format!("Amora gagal dipasang:\n{e}"), MB_OK | MB_ICONERROR);
+            ask(&format!("Leo gagal dipasang:\n{e}"), MB_OK | MB_ICONERROR);
         }
         std::process::exit(1);
     }
@@ -181,7 +181,7 @@ fn main() {
     }
     if first_time {
         ask(
-            "Amora sudah terpasang dan berjalan di tengah atas layar.\n\nArahkan kursor ke notch untuk membukanya. Menu ada di ikon Amora di tray (pojok kanan bawah).",
+            "Leo sudah terpasang dan berjalan di tengah atas layar.\n\nArahkan kursor ke notch untuk membukanya. Menu ada di ikon Leo di tray (pojok kanan bawah).",
             MB_OK | MB_ICONINFORMATION,
         );
     }
