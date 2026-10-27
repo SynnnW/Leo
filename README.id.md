@@ -87,6 +87,11 @@ Untuk pengembangan:
 - [x] Maskot: mata muncul saat PC diam 1 menit, tidur setelah 2 menit, menyapa saat kembali
 - [x] Mode notch minimal: garis tipis, tetap muncul penuh untuk lirik dan notifikasi
 - [x] Indikator mic (oranye) / kamera (hijau) + notifikasi nama aplikasinya
+- [x] Tambahan Leo (di atas Amora):
+  - **Jendela Pengaturan** terpisah dan bisa dipindah (menu tray → *Pengaturan…*), bukan tab di notch. Tab: *Umum*, *Akun*
+  - **Ukuran notch**: stepper *Ukuran notch* (70–150 %) di atas skala DPI Windows
+  - **Chat AI** (menu tray): membuka Claude, Gemini, atau ChatGPT sebagai jendela aplikasi Edge/Chrome tanpa token API. Tiap profil (`ai.profiles` di `settings.json`, bawaan *Utama* dan *Kedua*) punya data browser sendiri, jadi bisa ganti akun tanpa logout
+  - **Tugas & Makrab dari Supabase**: masuk dengan Google (*Pengaturan → Akun*, boleh lebih dari satu akun dan bisa ditukar langsung). Notch mengingatkan deadline (24 jam, 3 jam, 1 jam, terlambat) dan punya halaman *Tugas* berisi progres makrab. Setup sekali: isi anon key di `settings.json` (`supabase.anon_key`) dan tambahkan `http://127.0.0.1:53682/callback` di Supabase → Authentication → URL Configuration → Redirect URLs. Email Gmail dari server (opsional): lihat `supabase/README.md`
 - [x] Pop-up earbud (mati default, nyalakan di Setelan → *Pop-up earbud*): case TWS dibuka di dekat PC → pop-up di notch. Deteksi lewat iklan BLE dengan service `0xFD92` (mis. KZ Vxs); selama earbud tersambung ke PC, baterainya diambil dari angka yang dilaporkan Windows (satu angka, bukan kiri/kanan/case). Nama, kecocokan perangkat, dan ambang sinyal ada di bagian `earbuds` pada `settings.json`
 - [x] Screenshot baru otomatis masuk Shelf
 - [x] Sleep timer musik 15/30/60 menit, volume memudar 10 detik lalu musik dijeda

@@ -58,6 +58,11 @@ In the closed notch:
 - **Notifications** for Caps Lock, keyboard language, charger / low battery, Wi-Fi / internet, audio output (e.g. headphones).
 - **Privacy dots**: orange while an app uses the microphone, green for the camera.
 - **Mascot**: when the PC has been idle, the clock steps aside and a pair of eyes appears; they doze off and say hi when you're back.
+- **Leo additions** (on top of Amora):
+  - **Settings window**: a separate, movable window (tray menu → *Pengaturan…*) instead of a tab inside the notch. Tabs: *Umum* and *Akun*.
+  - **Notch size**: a *Ukuran notch* stepper (70–150 %) on top of the Windows DPI scale.
+  - **Chat AI** (tray menu): opens Claude, Gemini or ChatGPT as an Edge/Chrome app window, with no API token. Each profile (`ai.profiles` in `settings.json`, default *Utama* and *Kedua*) has its own browser data, so you can switch accounts without logging out.
+  - **Tasks & Makrab from Supabase**: sign in with Google (*Pengaturan → Akun*, more than one account, switch instantly). The notch shows deadline reminders (24 h, 3 h, 1 h, overdue) and a *Tugas* page with makrab progress. One-time setup: put the project's anon key in `settings.json` (`supabase.anon_key`) and add `http://127.0.0.1:53682/callback` to Supabase → Authentication → URL Configuration → Redirect URLs. Optional Gmail reminders from the server: see `supabase/README.md`.
 - **Earbuds pop-up** (off by default; turn on in Settings → *Pop-up earbud*): open the case of your TWS earbuds near the PC and a pop-up appears in the notch. It listens for the Bluetooth LE advert with service `0xFD92` (e.g. KZ Vxs) and, while the earbuds are connected to this PC, shows the battery percentage that Windows reports (one number, not left/right/case). Name, device match and signal threshold are in the `earbuds` section of `settings.json`.
 - **Minimal mode**: the closed notch becomes a thin line for laptops with a thick top bezel.
 - **Gets out of the way**: when a tab or window sits behind the notch and your cursor heads there, the notch moves aside. Push the cursor against the very top edge to open the notch.
