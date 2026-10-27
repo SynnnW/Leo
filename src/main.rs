@@ -5,9 +5,12 @@ mod ai;
 mod autostart;
 mod case_detect;
 mod crashlog;
+mod crypto;
+mod net;
 mod earbuds;
 mod gfx;
 mod settings_window;
+mod supabase;
 mod keyboard;
 mod lyrics;
 mod media;
@@ -43,7 +46,7 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use anim::Spring;
 use gfx::{Align, Color, Gfx, Rect, BLACK, DIM, WHITE};
 use modules::{
-    clipboard, clipboard::Clipboard, clock::ClockModule, earbuds::EarbudsPopup, media::MediaModule, schedule::Schedule,
+    clipboard, clipboard::Clipboard, clock::ClockModule, deadline::{DeadlineAlert, DeadlinePage}, earbuds::EarbudsPopup, media::MediaModule, schedule::Schedule,
     Poll, osd::Osd, pomodoro::Pomodoro, shelf, shelf::Shelf, todo::Todo,
     water::Water, Event, Module,
 };
@@ -787,6 +790,9 @@ impl App {
                 self.retarget();
                 self.render();
             }
+            supabase::WM_APP_MAKRAB => {
+                self.broadcast(Event::Makrab);
+            }
             earbuds::WM_APP_EARBUDS => {
                 self.broadcast(Event::Earbuds { opened: wp.0 == 0, percent: earbuds::percent() });
             }
@@ -1174,10 +1180,12 @@ fn main() -> Result<()> {
         let modules: Vec<Box<dyn Module>> = vec![
             Box::new(Osd::new()),
             Box::new(EarbudsPopup::new(settings.clone())),
+            Box::new(DeadlineAlert::new()),
             Box::new(MediaModule::new(shared, handle, g.wic.clone(), lyrics, settings.clone())),
             Box::new(Pomodoro::new(settings.clone())),
             Box::new(Water::new(settings.clone())),
             Box::new(Todo::new()),
+            Box::new(DeadlinePage::new()),
             Box::new(Schedule::new()),
             Box::new(Shelf::new(g.wic.clone(), hwnd)),
             Box::new(Clipboard::new(hwnd, settings.clone())),
@@ -1238,6 +1246,7 @@ fn main() -> Result<()> {
         privacy::watch(hwnd);
         with_app(|a| a.in_use = privacy::current());
         screenshots::watch(hwnd);
+        supabase::start_worker(hwnd.0 as isize);
         with_app(|a| a.sync_earbuds());
         {
             let s = settings.borrow();

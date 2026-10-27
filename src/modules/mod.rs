@@ -2,7 +2,9 @@
 //! lalu mendaftarkannya di `main.rs`.
 
 pub mod clipboard;
+pub mod account_page;
 pub mod clock;
+pub mod deadline;
 pub mod earbuds;
 pub mod media;
 pub mod osd;
@@ -40,6 +42,8 @@ pub enum Event {
     SettingsChanged,
     /// Case earbud terbuka (`opened`) atau angka baterainya baru terbaca.
     Earbuds { opened: bool, percent: Option<u32> },
+    /// Data makrab/deadline dari Supabase diperbarui.
+    Makrab,
 }
 
 pub trait Module {

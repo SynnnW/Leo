@@ -51,12 +51,13 @@ pub fn launch(service: usize, profile: &str) -> bool {
     match browser_candidates().into_iter().find(|p| p.is_file()) {
         Some(exe) => std::process::Command::new(exe).args(app_args(url, &dir)).spawn().is_ok(),
         // Tanpa Edge/Chrome: buka di browser bawaan (tanpa profil terpisah).
-        None => open_default(url),
+        None => open_url(url),
     }
 }
 
+/// Buka `url` di browser bawaan.
 #[cfg(windows)]
-fn open_default(url: &str) -> bool {
+pub fn open_url(url: &str) -> bool {
     use windows::core::{w, HSTRING};
     use windows::Win32::UI::Shell::ShellExecuteW;
     use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
@@ -64,7 +65,7 @@ fn open_default(url: &str) -> bool {
 }
 
 #[cfg(not(windows))]
-fn open_default(_url: &str) -> bool {
+pub fn open_url(_url: &str) -> bool {
     false
 }
 

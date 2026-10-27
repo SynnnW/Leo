@@ -1,8 +1,8 @@
 //! Jendela Pengaturan sendiri: terpisah dari notch, bisa dipindah, dan tidak ikut tertutup
-//! saat notch menyusut. Isinya halaman Setelan yang sama (`modules::settings_page`),
-//! hanya digambar di jendela biasa dengan bilah judul.
+//! saat notch menyusut. Berisi beberapa halaman (Umum, Akun) yang sama-sama `Module`,
+//! hanya digambar di jendela biasa dengan bilah judul dan tab.
 //!
-//! Dibuka dari menu tray ("Pengaturan…"). Setiap perubahan disimpan oleh halaman itu sendiri,
+//! Dibuka dari menu tray ("Pengaturan…"). Setiap perubahan disimpan oleh halamannya sendiri,
 //! lalu jendela utama diberi tahu lewat `WM_APP_SETTINGS` supaya setelan langsung berlaku.
 
 use std::cell::RefCell;
@@ -15,23 +15,32 @@ use windows::Win32::UI::Input::KeyboardAndMouse::VK_ESCAPE;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 use crate::gfx::{Align, Color, Gfx, Rect, DIM, FAINT, WHITE};
+use crate::modules::account_page::AccountPage;
 use crate::modules::settings_page::SettingsPage;
 use crate::modules::Module;
 use crate::settings::SharedSettings;
+use crate::supabase;
 
 /// Dikirim ke jendela utama setelah ada setelan yang diubah di jendela ini.
 pub const WM_APP_SETTINGS: u32 = WM_APP + 13;
 
 const TITLE_H: f32 = 44.0;
+const TAB_H: f32 = 22.0;
+const TAB_W: f32 = 84.0;
+const TIMER_REFRESH: usize = 1;
 const BG: Color = Color(0.085, 0.085, 0.10, 1.0);
 
 struct State {
     hwnd: HWND,
     main: HWND,
     g: Gfx,
-    page: SettingsPage,
+    pages: Vec<(&'static str, Box<dyn Module>)>,
+    tab: usize,
+    tab_hits: Vec<Rect>,
     close: Rect,
     content: Rect,
+    /// `supabase::version()` terakhir yang tergambar; berubah = ada data/status baru.
+    seen_version: u32,
 }
 
 thread_local! {
@@ -48,6 +57,7 @@ impl State {
         if self.g.begin().is_err() {
             return;
         }
+        self.seen_version = supabase::version();
         let full = Rect::new(0.0, 0.0, w, h);
         self.g.fill_rrect(full, 16.0, BG);
         self.g.stroke_rrect(full.inflate(-0.5), 16.0, 1.0, FAINT);
@@ -55,8 +65,21 @@ impl State {
         self.g.text("Pengaturan", Rect::new(58.0, 0.0, 200.0, TITLE_H), 14.0, 400, DIM, Align::Left);
         self.g.fill_rrect(self.close, 8.0, FAINT);
         self.g.text("×", self.close, 16.0, 600, WHITE, Align::Center);
+
+        // Tab halaman.
+        self.tab_hits.clear();
+        for (i, (name, _)) in self.pages.iter().enumerate() {
+            let r = Rect::new(20.0 + i as f32 * (TAB_W + 6.0), TITLE_H - 8.0, TAB_W, TAB_H);
+            if i == self.tab {
+                self.g.fill_rrect(r, 8.0, FAINT);
+            }
+            self.g.text(name, r, 12.5, if i == self.tab { 600 } else { 400 }, if i == self.tab { WHITE } else { DIM }, Align::Center);
+            self.tab_hits.push(r);
+        }
+
         let content = self.content;
-        self.page.draw_expanded(&mut self.g, content);
+        let tab = self.tab;
+        self.pages[tab].1.draw_expanded(&mut self.g, content);
 
         let mut rc = RECT::default();
         unsafe {
@@ -65,9 +88,10 @@ impl State {
         let _ = self.g.end(self.hwnd, POINT { x: rc.left, y: rc.top });
     }
 
-    /// Titik (DIP, relatif jendela): bilah judul bisa diseret kecuali tombol tutup.
+    /// Titik (DIP, relatif jendela): bilah judul bisa diseret kecuali tombol tutup dan tab.
     fn hit_test(&self, x: f32, y: f32) -> u32 {
-        if y >= 0.0 && y < TITLE_H && !self.close.contains(x, y) {
+        let on_tab = self.tab_hits.iter().any(|r| r.contains(x, y));
+        if (0.0..TITLE_H - 8.0).contains(&y) && !self.close.contains(x, y) && !on_tab {
             HTCAPTION
         } else {
             HTCLIENT
@@ -100,6 +124,7 @@ fn create(main: HWND, settings: SharedSettings) -> Result<()> {
             lpszClassName: class,
             hCursor: LoadCursorW(None, IDC_ARROW)?,
             // Ikon exe (ID 1 dari build.rs) untuk tombol di taskbar dan Alt+Tab.
+            #[allow(clippy::manual_dangling_ptr)]
             hIcon: LoadIconW(hinst, PCWSTR(1 as *const u16)).unwrap_or_default(),
             ..Default::default()
         };
@@ -121,9 +146,14 @@ fn create(main: HWND, settings: SharedSettings) -> Result<()> {
         )?;
 
         let scale = GetDpiForWindow(hwnd) as f32 / 96.0;
-        let page = SettingsPage::new(settings);
-        let (cw, ch) = page.expanded_size();
-        let (w_dip, h_dip) = (cw + 40.0, TITLE_H + ch + 6.0);
+        let pages: Vec<(&'static str, Box<dyn Module>)> = vec![
+            ("Umum", Box::new(SettingsPage::new(settings.clone()))),
+            ("Akun", Box::new(AccountPage::new(settings))),
+        ];
+        // Jendela seukuran halaman terbesar supaya tidak berubah ukuran saat pindah tab.
+        let (cw, ch) = pages.iter().map(|(_, p)| p.expanded_size()).fold((0.0f32, 0.0f32), |a, s| (a.0.max(s.0), a.1.max(s.1)));
+        let content_top = TITLE_H - 8.0 + TAB_H + 4.0;
+        let (w_dip, h_dip) = (cw + 40.0, content_top + ch + 6.0);
         let (px_w, px_h) = ((w_dip * scale).round() as i32, (h_dip * scale).round() as i32);
         let g = Gfx::new(px_w, px_h, scale)?;
 
@@ -135,12 +165,17 @@ fn create(main: HWND, settings: SharedSettings) -> Result<()> {
             hwnd,
             main,
             g,
-            page,
+            pages,
+            tab: 0,
+            tab_hits: Vec::new(),
             close: Rect::new(w_dip - 20.0 - 28.0, (TITLE_H - 28.0) / 2.0, 28.0, 28.0),
-            content: Rect::new(0.0, TITLE_H - 6.0, w_dip, ch),
+            content: Rect::new(0.0, content_top, w_dip, ch),
+            seen_version: supabase::version(),
         };
         WIN.with(|w| *w.borrow_mut() = Some(state));
         redraw();
+        // Login Google dan data makrab berjalan di latar belakang; gambar ulang saat ada kabar baru.
+        SetTimer(hwnd, TIMER_REFRESH, 700, None);
         let _ = ShowWindow(hwnd, SW_SHOW);
         let _ = SetForegroundWindow(hwnd);
     }
@@ -185,9 +220,12 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRES
                 let y = ((lp.0 >> 16) & 0xffff) as i16 as f32 / s.g.scale;
                 if s.close.contains(x, y) {
                     close = true;
+                } else if let Some(i) = s.tab_hits.iter().position(|r| r.contains(x, y)) {
+                    s.tab = i;
+                    s.draw();
                 } else {
-                    let content = s.content;
-                    if s.page.click(content, x, y) {
+                    let (content, tab) = (s.content, s.tab);
+                    if s.pages[tab].1.click(content, x, y) {
                         s.draw();
                         changed_for = Some(s.main);
                     }
@@ -205,6 +243,18 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRES
             }
             LRESULT(0)
         }
+        WM_TIMER if wp.0 == TIMER_REFRESH => {
+            WIN.with(|w| {
+                if let Ok(mut w) = w.try_borrow_mut() {
+                    if let Some(s) = w.as_mut() {
+                        if supabase::version() != s.seen_version {
+                            s.draw();
+                        }
+                    }
+                }
+            });
+            LRESULT(0)
+        }
         WM_KEYDOWN if wp.0 as u16 == VK_ESCAPE.0 => {
             unsafe {
                 let _ = DestroyWindow(hwnd);
@@ -212,6 +262,9 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRES
             LRESULT(0)
         }
         WM_DESTROY => {
+            unsafe {
+                let _ = KillTimer(hwnd, TIMER_REFRESH);
+            }
             WIN.with(|w| {
                 if let Ok(mut w) = w.try_borrow_mut() {
                     *w = None;

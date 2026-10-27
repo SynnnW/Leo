@@ -30,6 +30,7 @@ pub struct Settings {
     pub ui_scale: u32,
     pub earbuds: EarbudsCfg,
     pub ai: AiCfg,
+    pub supabase: SupabaseCfg,
     pub pomodoro: PomodoroCfg,
     pub water: WaterCfg,
 }
@@ -47,9 +48,34 @@ impl Default for Settings {
             ui_scale: 100,
             earbuds: Default::default(),
             ai: Default::default(),
+            supabase: Default::default(),
             pomodoro: Default::default(),
             water: Default::default(),
         }
+    }
+}
+
+/// Koneksi ke Supabase (database website SynnnW) untuk tugas makrab dan deadline.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct SupabaseCfg {
+    /// URL proyek Supabase (publik, sama dengan yang dipakai website).
+    pub url: String,
+    /// Kunci anon/publishable (publik; sama dengan VITE_SUPABASE_ANON_KEY di website). Kosong = fitur mati.
+    pub anon_key: String,
+    /// Seberapa sering data diperbarui (menit).
+    pub refresh_min: u64,
+}
+
+impl Default for SupabaseCfg {
+    fn default() -> Self {
+        Self { url: "https://fvrnvblrzbsbmhauyvde.supabase.co".into(), anon_key: String::new(), refresh_min: 5 }
+    }
+}
+
+impl SupabaseCfg {
+    pub fn configured(&self) -> bool {
+        !self.url.trim().is_empty() && !self.anon_key.trim().is_empty()
     }
 }
 
