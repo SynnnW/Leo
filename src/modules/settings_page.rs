@@ -26,6 +26,7 @@ enum Toggle {
 
 #[derive(Clone, Copy)]
 enum Step {
+    UiSize,
     Focus,
     ShortBreak,
     LongBreak,
@@ -52,7 +53,8 @@ const LEFT: [Toggle; 10] = [
     Toggle::Earbuds,
     Toggle::WaterRemind,
 ];
-const RIGHT: [Step; 7] = [
+const RIGHT: [Step; 8] = [
+    Step::UiSize,
     Step::Focus,
     Step::ShortBreak,
     Step::LongBreak,
@@ -110,6 +112,7 @@ fn toggle_flip(s: &mut Settings, t: Toggle) {
 /// (label, nilai sekarang, langkah, min, maks, satuan)
 fn step_info(s: &Settings, k: Step) -> (&'static str, u32, u32, u32, u32, &'static str) {
     match k {
+        Step::UiSize => ("Ukuran notch", s.ui_scale, 10, 70, 150, "%"),
         Step::Focus => ("Fokus", s.pomodoro.focus_min, 5, 5, 120, "mnt"),
         Step::ShortBreak => ("Istirahat pendek", s.pomodoro.short_break_min, 1, 1, 30, "mnt"),
         Step::LongBreak => ("Istirahat panjang", s.pomodoro.long_break_min, 5, 5, 60, "mnt"),
@@ -124,6 +127,7 @@ fn step_apply(s: &mut Settings, k: Step, dir: i32) {
     let (_, v, step, min, max, _) = step_info(s, k);
     let v = (v as i64 + dir as i64 * step as i64).clamp(min as i64, max as i64) as u32;
     match k {
+        Step::UiSize => s.ui_scale = v,
         Step::Focus => s.pomodoro.focus_min = v,
         Step::ShortBreak => s.pomodoro.short_break_min = v,
         Step::LongBreak => s.pomodoro.long_break_min = v,
@@ -157,7 +161,7 @@ impl Module for SettingsPage {
 
     fn draw_expanded(&mut self, g: &mut Gfx, r: Rect) {
         self.hits.clear();
-        g.text("Setelan", Rect::new(r.x + 20.0, r.y + 10.0, 200.0, 24.0), 15.0, 600, WHITE, Align::Left);
+        g.text("Umum", Rect::new(r.x + 20.0, r.y + 10.0, 200.0, 24.0), 15.0, 600, WHITE, Align::Left);
         let s = self.settings.borrow().clone();
         let col_w = (r.w - 40.0 - COL_GAP) / 2.0;
         let (lx, rx) = (r.x + 20.0, r.x + 20.0 + col_w + COL_GAP);
@@ -224,5 +228,13 @@ mod tests {
         assert_eq!(s.water.start_hour, 8, "mulai tidak boleh menyusul selesai");
         step_apply(&mut s, Step::WaterEnd, -1);
         assert_eq!(s.water.end_hour, 9, "selesai tidak boleh mendahului mulai");
+        for _ in 0..20 {
+            step_apply(&mut s, Step::UiSize, -1);
+        }
+        assert_eq!(s.ui_scale, 70, "ukuran tidak boleh di bawah 70%");
+        for _ in 0..20 {
+            step_apply(&mut s, Step::UiSize, 1);
+        }
+        assert_eq!(s.ui_scale, 150);
     }
 }

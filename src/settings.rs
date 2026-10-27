@@ -26,7 +26,10 @@ pub struct Settings {
     pub clipboard: bool,
     /// Tabel yang disalin dari chat AI dirapikan (bergaris, lebar kolom pas) sebelum ditempel.
     pub tidy_tables: bool,
+    /// Skala tampilan notch dalam persen (70..=150), di atas skala DPI Windows.
+    pub ui_scale: u32,
     pub earbuds: EarbudsCfg,
+    pub ai: AiCfg,
     pub pomodoro: PomodoroCfg,
     pub water: WaterCfg,
 }
@@ -41,10 +44,26 @@ impl Default for Settings {
             screenshot_to_shelf: true,
             clipboard: false,
             tidy_tables: true,
+            ui_scale: 100,
             earbuds: Default::default(),
+            ai: Default::default(),
             pomodoro: Default::default(),
             water: Default::default(),
         }
+    }
+}
+
+/// Chat AI lewat jendela browser (tanpa token API). Tiap profil = satu set login sendiri.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct AiCfg {
+    /// Nama profil, mis. ["Utama", "Kedua"]: ganti akun tanpa logout. Maksimal 9 yang ditampilkan di menu.
+    pub profiles: Vec<String>,
+}
+
+impl Default for AiCfg {
+    fn default() -> Self {
+        Self { profiles: vec!["Utama".into(), "Kedua".into()] }
     }
 }
 
@@ -99,6 +118,13 @@ pub struct WaterCfg {
 impl Default for WaterCfg {
     fn default() -> Self {
         Self { goal_ml: 1500, sip_ml: 250, remind: true, interval_min: 60, start_hour: 8, end_hour: 21 }
+    }
+}
+
+impl Settings {
+    /// Pengali ukuran notch dari `ui_scale`, dibatasi 0.7..=1.5 walau settings.json diisi aneh.
+    pub fn ui_scale_factor(&self) -> f32 {
+        self.ui_scale.clamp(70, 150) as f32 / 100.0
     }
 }
 
@@ -183,6 +209,19 @@ mod tests {
         assert!(!s.earbuds.enabled, "pop-up earbud mati secara default");
         assert_eq!(s.earbuds.device_match, "vxs");
         assert_eq!(s.earbuds.open_rssi, -50);
+    }
+
+    #[test]
+    fn ui_scale_is_clamped_and_defaults_to_100() {
+        let mut s = Settings::default();
+        assert_eq!(s.ui_scale_factor(), 1.0);
+        s.ui_scale = 10;
+        assert_eq!(s.ui_scale_factor(), 0.7);
+        s.ui_scale = 900;
+        assert_eq!(s.ui_scale_factor(), 1.5);
+        let old: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(old.ui_scale, 100);
+        assert_eq!(old.ai.profiles, vec!["Utama", "Kedua"]);
     }
 
     #[test]

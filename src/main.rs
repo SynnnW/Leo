@@ -1,11 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod anim;
+mod ai;
 mod autostart;
 mod case_detect;
 mod crashlog;
 mod earbuds;
 mod gfx;
+mod settings_window;
 mod keyboard;
 mod lyrics;
 mod media;
@@ -42,7 +44,7 @@ use anim::Spring;
 use gfx::{Align, Color, Gfx, Rect, BLACK, DIM, WHITE};
 use modules::{
     clipboard, clipboard::Clipboard, clock::ClockModule, earbuds::EarbudsPopup, media::MediaModule, schedule::Schedule,
-    settings_page::SettingsPage, Poll, osd::Osd, pomodoro::Pomodoro, shelf, shelf::Shelf, todo::Todo,
+    Poll, osd::Osd, pomodoro::Pomodoro, shelf, shelf::Shelf, todo::Todo,
     water::Water, Event, Module,
 };
 use settings::Settings;
@@ -331,7 +333,7 @@ impl App {
     /// Letakkan kanvas di tengah atas monitor utama, sesuai DPI-nya.
     fn place(&mut self) {
         unsafe {
-            let scale = GetDpiForWindow(self.hwnd) as f32 / 96.0;
+            let scale = GetDpiForWindow(self.hwnd) as f32 / 96.0 * self.settings.borrow().ui_scale_factor();
             let mon = MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTOPRIMARY);
             let mut mi = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
             let _ = GetMonitorInfoW(mon, &mut mi);
@@ -606,6 +608,7 @@ impl App {
             self.recheck_covered();
         }
         self.sync_earbuds();
+        self.place();
         // Halaman yang sedang dibuka bisa hilang (mis. Clipboard dimatikan).
         if self.modules[self.page].tab().is_none() {
             self.page = self.tabs().first().copied().unwrap_or(0);
@@ -688,9 +691,6 @@ impl App {
                     let content = self.content();
                     if !self.modules[self.page].click(content, x, y) {
                         return Some(LRESULT(0));
-                    }
-                    if self.modules[self.page].tab() == Some("Setelan") {
-                        self.apply_settings();
                     }
                 }
                 self.sync_editing();
@@ -780,6 +780,12 @@ impl App {
                     let icon = if headphones { "🎧" } else { "🔊" };
                     self.notice(icon, name, "Output audio");
                 }
+            }
+            settings_window::WM_APP_SETTINGS => {
+                self.apply_settings();
+                self.schedule_poll();
+                self.retarget();
+                self.render();
             }
             earbuds::WM_APP_EARBUDS => {
                 self.broadcast(Event::Earbuds { opened: wp.0 == 0, percent: earbuds::percent() });
@@ -875,6 +881,9 @@ const CMD_ABOUT: usize = 3;
 const CMD_MASCOT: usize = 4;
 const CMD_MINIMAL: usize = 5;
 const CMD_CLIPBOARD: usize = 6;
+const CMD_SETTINGS: usize = 7;
+/// Menu Chat AI: 100 + layanan * 10 + profil.
+const CMD_AI_BASE: usize = 100;
 
 /// Menu yang sama untuk klik kanan notch dan klik ikon tray.
 fn show_menu(hwnd: HWND) {
@@ -887,6 +896,28 @@ fn show_menu(hwnd: HWND) {
             (mascot, minimal, clip) = (s.mascot, s.minimal, s.clipboard);
         });
         let check = |on: bool| if on { MF_CHECKED } else { MF_UNCHECKED };
+        let _ = AppendMenuW(menu, MF_STRING, CMD_SETTINGS, w!("Pengaturan…"));
+        let mut profiles = Vec::new();
+        with_app(|a| profiles = a.settings.borrow().ai.profiles.clone());
+        profiles.truncate(9);
+        if profiles.is_empty() {
+            profiles.push("Utama".into());
+        }
+        if let Ok(ai_menu) = CreatePopupMenu() {
+            for (si, (name, _)) in ai::SERVICES.iter().enumerate() {
+                let name = HSTRING::from(*name);
+                if profiles.len() == 1 {
+                    let _ = AppendMenuW(ai_menu, MF_STRING, CMD_AI_BASE + si * 10, &name);
+                } else if let Ok(sub) = CreatePopupMenu() {
+                    for (pi, p) in profiles.iter().enumerate() {
+                        let _ = AppendMenuW(sub, MF_STRING, CMD_AI_BASE + si * 10 + pi, &HSTRING::from(p.as_str()));
+                    }
+                    let _ = AppendMenuW(ai_menu, MF_POPUP, sub.0 as usize, &name);
+                }
+            }
+            let _ = AppendMenuW(menu, MF_POPUP, ai_menu.0 as usize, w!("Chat AI"));
+        }
+        let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
         let _ = AppendMenuW(menu, MF_STRING | check(auto), CMD_AUTOSTART, w!("Mulai bersama Windows"));
         let _ = AppendMenuW(menu, MF_STRING | check(mascot), CMD_MASCOT, w!("Maskot Leo"));
         let _ = AppendMenuW(menu, MF_STRING | check(minimal), CMD_MINIMAL, w!("Notch minimal"));
@@ -905,6 +936,11 @@ fn show_menu(hwnd: HWND) {
             CMD_EXIT => {
                 let _ = DestroyWindow(hwnd);
             }
+            c @ 100..=199 => with_app(|a| {
+                let name = a.settings.borrow().ai.profiles.get((c - CMD_AI_BASE) % 10).cloned().unwrap_or_else(|| "Utama".into());
+                ai::launch((c - CMD_AI_BASE) / 10, &name);
+            }),
+            CMD_SETTINGS => with_app(|a| settings_window::open(hwnd, a.settings.clone())),
             CMD_AUTOSTART => autostart::set(!auto),
             CMD_MASCOT | CMD_MINIMAL | CMD_CLIPBOARD => with_app(|a| {
                 {
@@ -1145,7 +1181,6 @@ fn main() -> Result<()> {
             Box::new(Schedule::new()),
             Box::new(Shelf::new(g.wic.clone(), hwnd)),
             Box::new(Clipboard::new(hwnd, settings.clone())),
-            Box::new(SettingsPage::new(settings.clone())),
             Box::new(ClockModule::new(settings.clone())),
         ];
 
